@@ -54,7 +54,7 @@ function getURLParam(name) {
   return url.searchParams.get(name);
 }
 
-function showDedicationText() { //seguidores
+function showDedicationText() { 
   let text = getURLParam('text');
   if (!text) {
     text = `Para Júlia, o amor da minha vida:\n\nDesde que nos conhecemos, eu sabia que você era especial, e hoje tenho certeza de que é você. Seu jeito bobo, gentil e amoroso de ser… tudo em você foi, e é, perfeito para mim.\n\nSou muito grato a Deus por ter colocado você na minha vida, meu amor. Sinto-me a cada dia mais amado por você, e sou extremamente grato e feliz por isso e por toda a atenção, carinho e cuidado que você tem comigo.\n\nTe amo mais do que tudo neste mundo. Você mudou completamente a minha vida. Muito obrigado, amor! Para sempre nós!`;  } else {
@@ -89,8 +89,6 @@ function showSignature() {
   signature.classList.add('visible');
 }
 
-
-
 function startFloatingObjects() {
   const container = document.getElementById('floating-objects');
   let count = 0;
@@ -122,26 +120,77 @@ function startFloatingObjects() {
 
 function showCountdown() {
   const container = document.getElementById('countdown');
+  if (!container) return;
+
   let startParam = getURLParam('start');
   let eventParam = getURLParam('event');
-  let startDate = startParam ? new Date(startParam + 'T00:00:00') : new Date('2025-04-14T00:00:00'); 
-  let eventDate = eventParam ? new Date(eventParam + 'T00:00:00') : new Date('2026-04-14T00:00:00');
+
+  let startDate = startParam ? new Date(startParam + 'T00:00:00') : new Date('2025-04-14T00:00:00');
+  if (isNaN(startDate.getTime())) startDate = new Date('2025-04-14T00:00:00');
+
+  let eventRef = eventParam ? new Date(eventParam + 'T00:00:00') : new Date('2026-04-14T00:00:00');
+  if (isNaN(eventRef.getTime())) eventRef = new Date('2026-04-14T00:00:00');
+
+  const anniversaryMonth = eventRef.getMonth();
+  const anniversaryDay = eventRef.getDate();
+
+  function diffYearsMonthsDays(start, end) {
+    if (start > end) return { years: 0, months: 0, days: 0 };
+
+    let years = end.getFullYear() - start.getFullYear();
+    let months = end.getMonth() - start.getMonth();
+    let days = end.getDate() - start.getDate();
+
+    if (days < 0) {
+      let lastMonth = new Date(end.getFullYear(), end.getMonth(), 0);
+      days += lastMonth.getDate();
+      months--;
+    }
+
+    if (months < 0) {
+      months += 12;
+      years--;
+    }
+    if (years < 0) years = 0;
+    return { years, months, days };
+  }
+
+  function getNextAnniversary(now, month, day) {
+    let candidate = new Date(now.getFullYear(), month, day);
+    if (candidate <= now) {
+      candidate = new Date(now.getFullYear() + 1, month, day);
+    }
+    return candidate;
+  }
 
   function update() {
     const now = new Date();
-    let diff = now - startDate;
-    let days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    let eventDiff = eventDate - now;
-    let eventDays = Math.max(0, Math.floor(eventDiff / (1000 * 60 * 60 * 24)));
-    let eventHours = Math.max(0, Math.floor((eventDiff / (1000 * 60 * 60)) % 24));
-    let eventMinutes = Math.max(0, Math.floor((eventDiff / (1000 * 60)) % 60));
-    let eventSeconds = Math.max(0, Math.floor((eventDiff / 1000) % 60));
+
+    const together = diffYearsMonthsDays(startDate, now);
+    const anos = together.years;
+    const meses = together.months;
+    const dias = together.days;
+
+    const anosStr = `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+    const mesesStr = `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+    const diasStr = `${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+
+    const nextAnniv = getNextAnniversary(now, anniversaryMonth, anniversaryDay);
+    let diffMs = nextAnniv - now;
+    if (diffMs < 0) diffMs = 0;
+    const totalSeg = Math.floor(diffMs / 1000);
+    const eventDays = Math.floor(totalSeg / 86400);
+    const eventHours = Math.floor((totalSeg % 86400) / 3600);
+    const eventMinutes = Math.floor((totalSeg % 3600) / 60);
+    const eventSeconds = totalSeg % 60;
 
     container.innerHTML =
-      `Estamos Juntos há: <b>${days}</b> dias<br>` +
+      `Estamos Juntos há: <b>${anosStr}, ${mesesStr} e ${diasStr}</b><br>` +
       `Nosso aniversário em: <b>${eventDays}d ${eventHours}h ${eventMinutes}m ${eventSeconds}s</b>`;
+
     container.classList.add('visible');
   }
+
   update();
   setInterval(update, 1000);
 }
